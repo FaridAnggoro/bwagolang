@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"startup/auth"
 	"startup/helper"
 	"startup/user"
 
@@ -13,11 +14,12 @@ import (
 type userHandler struct {
 	// handler mempunyai dependency terhadap service
 	userService user.Service
+	authService auth.Service
 }
 
 // function membuat handler baru
-func NewUserHandler(userService user.Service) *userHandler {
-	return &userHandler{userService}
+func NewUserHandler(userService user.Service, authService auth.Service) *userHandler {
+	return &userHandler{userService, authService}
 }
 
 // buat handler
@@ -52,14 +54,18 @@ func (h *userHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(newUser, "tokentokentoken")
+	token, err := h.authService.GenerateToken(newUser.ID)
+	if err != nil {
+		response := helper.APIResponse("Akun gagal terdaftar", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUser(newUser, token)
 
 	response := helper.APIResponse("Akun berhasil terdaftar", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
-
-	// service akan memanggil repository
-	// repository akan memanggil db
 }
 
 func (h *userHandler) Login(c *gin.Context) {
@@ -95,7 +101,14 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(loggedinUser, "tokentokentoken")
+	token, err := h.authService.GenerateToken(loggedinUser.ID)
+	if err != nil {
+		response := helper.APIResponse("Akun gagal masuk", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUser(loggedinUser, token)
 
 	response := helper.APIResponse("Akun berhasil masuk", http.StatusOK, "success", formatter)
 
