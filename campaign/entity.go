@@ -27,6 +27,6 @@ type CampaignImage struct {
 	CampaignID int
 	FileName   string
 	IsPrimary  int
-	CreatedeAt time.Time
+	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
